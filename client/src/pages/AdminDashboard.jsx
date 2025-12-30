@@ -69,7 +69,7 @@ const AdminDashboard = () => {
                     </h4>
                     <div className="space-y-3">
                         {recentTickets.map(ticket => (
-                            <div key={ticket._id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                            <div key={ticket._id} onClick={() => navigate(`/admin/reports/${ticket._id}`)} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                                 <div className="flex justify-between items-start mb-2">
                                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${ticket.aiAnalysis?.severity === 'High' ? 'bg-red-50 text-red-600' :
                                         ticket.aiAnalysis?.severity === 'Medium' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'
@@ -86,9 +86,11 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         ))}
-                        {recentTickets.length === 0 && (
-                            <p className="text-center text-sm text-slate-400 py-8">No open tickets</p>
-                        )}
+                        {
+                            recentTickets.length === 0 && (
+                                <p className="text-center text-sm text-slate-400 py-8">No open tickets</p>
+                            )
+                        }
                     </div>
                 </div>
 

@@ -43,7 +43,7 @@ const responseSchema = {
 
 // Initialize model with System Instructions
 const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash", // Flash is faster/cheaper for vision tasks
+    model: "gemini-2.5-flash", // Flash is faster/cheaper for vision tasks
     systemInstruction: "You are an expert City Inspector and Civil Engineer. Your task is to analyze images of civic issues and provide technical, structured reports for city maintenance crews.",
     generationConfig: {
         responseMimeType: "application/json",

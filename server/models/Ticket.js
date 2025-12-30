@@ -11,6 +11,11 @@ const TicketSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    reporter: {
+        name: { type: String, required: true },
+        contact: { type: String, required: true },
+        email: String
+    },
     userDescription: {
         type: String,
     },

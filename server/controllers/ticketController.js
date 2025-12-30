@@ -11,7 +11,7 @@ const reportIssue = async (req, res) => {
             return res.status(400).json({ message: 'Image is required' });
         }
 
-        const { userDescription, lat, lng, address } = req.body;
+        const { userDescription, lat, lng, address, name, contact, email } = req.body;
         const imageBuffer = req.file.buffer;
         const mimeType = req.file.mimetype;
 
@@ -25,11 +25,20 @@ const reportIssue = async (req, res) => {
         const ticket = new Ticket({
             imageUrl: "data:image/jpeg;base64," + imageBuffer.toString('base64'), // Storing base64 for MVP simplicity. Prod use Cloudinary/S3.
             userDescription,
+            reporter: {
+                name,
+                contact,
+                email
+            },
             aiAnalysis: analysis,
             location: {
                 lat: parseFloat(lat),
                 lng: parseFloat(lng),
                 address
+            },
+            department: {
+                name: analysis.category || 'General',
+                assignedAt: new Date()
             },
             status: 'Open',
             // SLA logic (Stub)
@@ -93,4 +102,45 @@ const analyzeImage = async (req, res) => {
     }
 };
 
-module.exports = { reportIssue, getTickets, analyzeImage };
+// @desc    Get single ticket by ID
+// @route   GET /api/tickets/:id
+// @access  Public (or Admin)
+const getTicketById = async (req, res) => {
+    try {
+        const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+        res.json(ticket);
+    } catch (error) {
+        console.error(error);
+        if (error.kind === 'ObjectId') {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Update ticket status
+// @route   PUT /api/tickets/:id/status
+// @access  Admin
+const updateTicketStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const ticket = await Ticket.findById(req.params.id);
+
+        if (!ticket) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        ticket.status = status;
+        await ticket.save();
+
+        res.json({ success: true, data: ticket });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+module.exports = { reportIssue, getTickets, analyzeImage, getTicketById, updateTicketStatus };

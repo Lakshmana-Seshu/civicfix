@@ -6,6 +6,7 @@ import ReportIssue from './pages/ReportIssue';
 import Home from './pages/Home';
 
 import AdminDashboard from './pages/AdminDashboard';
+import AdminReportDetails from './pages/AdminReportDetails';
 
 function App() {
   return (
@@ -14,7 +15,9 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="report" element={<ReportIssue />} />
+          <Route path="report" element={<ReportIssue />} />
           <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin/reports/:id" element={<AdminReportDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>
