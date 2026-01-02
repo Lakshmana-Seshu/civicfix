@@ -241,6 +241,13 @@ const checkDuplicate = async (req, res) => {
             candidateTickets
         );
 
+        if (analysis.isDuplicate && analysis.duplicateTicketId) {
+            const duplicateTicket = await Ticket.findById(analysis.duplicateTicketId);
+            if (duplicateTicket && duplicateTicket.sla) {
+                analysis.expectedResolutionDate = duplicateTicket.sla.expectedResolutionDate;
+            }
+        }
+
         res.json(analysis);
 
     } catch (error) {
@@ -254,14 +261,26 @@ const checkDuplicate = async (req, res) => {
 // @access  Public
 const upvoteTicket = async (req, res) => {
     try {
+        const { name, contact, email } = req.body;
         const ticket = await Ticket.findById(req.params.id);
         if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+        // Add upvoter details
+        if (name && contact) {
+            ticket.upvotedBy.push({
+                name,
+                contact,
+                email,
+                upvotedAt: new Date()
+            });
+        }
 
         ticket.upvotes = (ticket.upvotes || 0) + 1;
         await ticket.save();
 
-        res.json({ success: true, count: ticket.upvotes });
+        res.json({ success: true, count: ticket.upvotes, message: "Upvoted successfully" });
     } catch (error) {
+        console.error("Upvote Error:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

@@ -67,6 +67,12 @@ const TicketSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    upvotedBy: [{
+        name: String,
+        contact: String,
+        email: String,
+        upvotedAt: { type: Date, default: Date.now }
+    }],
     upvotes: {
         type: Number,
         default: 0

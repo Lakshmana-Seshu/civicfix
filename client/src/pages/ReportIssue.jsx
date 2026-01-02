@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Camera, MapPin, Loader2, UploadCloud, ArrowRight, Wand2, User, Phone, Mail, Navigation, Search, FileText } from 'lucide-react';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SmartDepartmentRouter from '../components/SmartDepartmentRouter';
@@ -14,6 +14,15 @@ L.Icon.Default.mergeOptions({
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Recenter Map Helper
+const RecenterMap = ({ lat, lng }) => {
+    const map = useMap();
+    useEffect(() => {
+        map.setView([lat, lng]);
+    }, [lat, lng, map]);
+    return null;
+};
 
 // Draggable Marker Component
 const DraggableMarker = ({ position, setPosition, onDragEnd }) => {
@@ -72,6 +81,7 @@ const ReportIssue = () => {
     const [address, setAddress] = useState('');
     const [zone, setZone] = useState('');
     const [gettingLocation, setGettingLocation] = useState(false);
+    const [isManualLocation, setIsManualLocation] = useState(false);
     const [description, setDescription] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -89,6 +99,7 @@ const ReportIssue = () => {
 
     const getLocation = () => {
         setGettingLocation(true);
+        setIsManualLocation(false);
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -175,12 +186,10 @@ const ReportIssue = () => {
         if (file) {
             setImage(file);
             setPreview(URL.createObjectURL(file));
-            // Auto-analyze upon selection
-            analyzeImage(file);
         }
     };
 
-    const analyzeImage = async (file) => {
+    const analyzeImage = async (file, isManual = false) => {
         setAnalyzingImg(true);
         const formData = new FormData();
         formData.append('image', file);
@@ -193,8 +202,8 @@ const ReportIssue = () => {
             console.log("API Analysis Result:", analysis); // Debug Log
             if (analysis) {
                 setAiAnalysis(analysis);
-                // Auto-fill description if empty
-                if (!description) {
+                // Auto-fill description if empty OR if manually triggered
+                if (!description || isManual) {
                     const generatedDesc = analysis.issueDescription || analysis.description;
                     console.log("Setting description to:", generatedDesc); // Debug Log
                     setDescription(generatedDesc);
@@ -377,16 +386,21 @@ const ReportIssue = () => {
                 <div className="flex gap-3 mb-2">
                     <button
                         onClick={getLocation}
-                        className="flex-1 bg-civic-600 text-white py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-civic-700 transition-colors"
+                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${!isManualLocation
+                            ? 'bg-civic-600 text-white hover:bg-civic-700'
+                            : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                         {gettingLocation ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
                         Auto Detect
                     </button>
                     <button
-                        className="flex-1 bg-white border border-slate-300 text-slate-700 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors focus:ring-2 focus:ring-civic-500"
+                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors focus:ring-2 focus:ring-civic-500 ${isManualLocation
+                            ? 'bg-civic-600 text-white hover:bg-civic-700'
+                            : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                         onClick={() => {
                             // Just focus the map container essentially
                             setGettingLocation(false);
+                            setIsManualLocation(true);
                         }}
                     >
                         <MapPin size={16} />
@@ -397,7 +411,7 @@ const ReportIssue = () => {
                 <div className="h-48 w-full rounded-lg overflow-hidden border border-slate-200 relative z-0">
                     <MapContainer
                         center={[location.lat, location.lng]}
-                        zoom={13}
+                        zoom={16}
                         style={{ height: "100%", width: "100%" }}
                         scrollWheelZoom={false} // Disable scroll zoom for better page scroll experience
                     >
@@ -405,6 +419,7 @@ const ReportIssue = () => {
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
+                        <RecenterMap lat={location.lat} lng={location.lng} />
                         <DraggableMarker
                             position={location}
                             setPosition={setLocation}
@@ -493,9 +508,23 @@ const ReportIssue = () => {
 
             {/* Step 3: Additional Details */}
             <div className="space-y-4">
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                    <FileText size={18} /> Description
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                        <FileText size={18} /> Description
+                    </h3>
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            if (image) analyzeImage(image, true);
+                        }}
+                        disabled={!image || analyzingImg}
+                        className="flex items-center gap-1.5 bg-civic-100 text-civic-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-civic-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        title="Generate Description with AI"
+                    >
+                        {analyzingImg ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                        Generate
+                    </button>
+                </div>
 
                 <textarea
                     value={description}
@@ -507,6 +536,7 @@ const ReportIssue = () => {
                 <DuplicateIncidentDetector
                     description={description}
                     location={location}
+                    reporter={reporter}
                 />
 
                 <SmartDepartmentRouter
@@ -536,7 +566,7 @@ const ReportIssue = () => {
                     </>
                 )}
             </button>
-        </div>
+        </div >
     );
 };
 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Loader2, ArrowLeft, Calendar, MapPin, AlertTriangle, CheckCircle2, Clock, User } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, MapPin, AlertTriangle, CheckCircle2, Clock, User, Users } from 'lucide-react';
 import L from 'leaflet';
 
 // Fix for default marker icon in React Leaflet
@@ -22,6 +22,7 @@ const AdminReportDetails = () => {
     const [updating, setUpdating] = useState(false);
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         fetchTicketDetails();
     }, [id]);
 
@@ -215,6 +216,27 @@ const AdminReportDetails = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* Community Upvotes / Additional Reporters */}
+                    {ticket.upvotedBy && ticket.upvotedBy.length > 0 && (
+                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                                <Users size={18} /> Additional Reporters (Upvotes)
+                            </h4>
+                            <div className="space-y-2">
+                                {ticket.upvotedBy.map((user, idx) => (
+                                    <div key={idx} className="bg-slate-50 p-2 rounded-lg text-sm border border-slate-100 flex justify-between items-center">
+                                        <div>
+                                            <span className="font-medium text-slate-800">{user.name}</span>
+                                            <span className="text-slate-400 mx-2">|</span>
+                                            <span className="text-slate-500">{user.contact}</span>
+                                        </div>
+                                        <span className="text-xs text-slate-400">{new Date(user.upvotedAt).toLocaleDateString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Smart Routing Info */}
                     {ticket.smartRouting?.recommendedDepartment && (

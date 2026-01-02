@@ -38,65 +38,12 @@ const SmartDepartmentRouter = ({ description, location, onAnalysisComplete }) =>
         }
     };
 
-    if (!description || description.length <= 10) {
-        return (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-slate-500 text-sm">
-                <WandIcon className="mx-auto mb-2 opacity-50" size={24} />
-                <p>Describe your issue to see smart department routing.</p>
-            </div>
-        );
-    }
-
-    if (loading) {
-        return (
-            <div className="bg-civic-50 border border-civic-100 rounded-xl p-4 flex items-center gap-3 text-civic-700 animate-pulse">
-                <Loader2 size={20} className="animate-spin" />
-                <span className="text-sm font-medium">Analyzing complaint context & location...</span>
-            </div>
-        );
-    }
-
+    // Headless component - logic only
+    if (!description || description.length <= 10) return null;
+    if (loading) return null;
     if (!routingData) return null;
 
-    return (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2">
-            <div className="bg-slate-50 border-b border-slate-200 px-4 py-2 flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                    <Building2 size={12} /> Smart Routing
-                </span>
-                <span className="text-xs font-mono text-slate-400">Confidence: {(routingData.confidence * 100).toFixed(0)}%</span>
-            </div>
-
-            <div className="p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                    <div className="p-2 bg-civic-100 text-civic-600 rounded-lg">
-                        <CheckCircle2 size={24} />
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-slate-900 leading-tight">
-                            {routingData.department}
-                        </h4>
-                        <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
-                            <MapPin size={12} /> {routingData.zone}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600 border border-slate-100">
-                    <p className="italic">"{routingData.reasoning}"</p>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs font-medium">
-                    <span className={`px-2 py-0.5 rounded ${routingData.priority === 'Critical' ? 'bg-red-100 text-red-700' :
-                        routingData.priority === 'High' ? 'bg-orange-100 text-orange-700' :
-                            'bg-blue-100 text-blue-700'
-                        }`}>
-                        {routingData.priority} Priority
-                    </span>
-                </div>
-            </div>
-        </div>
-    );
+    return null;
 };
 
 const WandIcon = ({ className, size }) => (
