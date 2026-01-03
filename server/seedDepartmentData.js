@@ -1,40 +1,58 @@
 const fs = require('fs');
 const path = require('path');
-const pdf = require('pdf-parse');
-const { extractDepartmentDataFromText, embedText } = require('./services/geminiService');
+// const pdf = require('pdf-parse'); // Removed due to bugs
+require('dotenv').config(); // Explicit load
+
+const log = (msg) => {
+    console.log(msg);
+    fs.appendFileSync(path.join(__dirname, 'seed_debug_out.txt'), msg + '\n');
+}
+
+log("--- SEEDING STARTED ---");
+log("Google Key Present: " + !!process.env.GOOGLE_API_KEY);
+log("Pinecone Key Present: " + !!process.env.PINECONE_API_KEY);
+
+const { extractDepartmentDataFromText, embedText, parsePDFWithGemini } = require('./services/geminiService');
 const { upsertDepartmentVectors } = require('./services/pineconeService');
 
 const seedDepartmentCharter = async () => {
     try {
-        console.log("Reading Department Charter PDF...");
+        log("Reading Department Charter PDF...");
         const pdfPath = path.join(__dirname, 'CivicFix_Department_Responsibility_Charter.pdf');
 
         if (!fs.existsSync(pdfPath)) {
-            console.error("PDF NOT FOUND at", pdfPath);
+            log("ERROR: PDF NOT FOUND at " + pdfPath);
             return;
         }
 
         const dataBuffer = fs.readFileSync(pdfPath);
-        const data = await pdf(dataBuffer);
-        const rawText = data.text;
 
-        console.log(`Extracted ${rawText.length} characters. Analyzing with Gemini...`);
+        log("Parsing PDF with Gemini...");
+        const rawText = await parsePDFWithGemini(dataBuffer);
+
+        if (!rawText || rawText.length < 50) {
+            log("ERROR: Failed to extract text from PDF or text too short.");
+            log("Raw Text: " + rawText);
+            return;
+        }
+
+        log(`Extracted ${rawText.length} characters. Analyzing with Gemini...`);
 
         // Extract structured data
         const deptItems = await extractDepartmentDataFromText(rawText);
 
         if (!deptItems || deptItems.length === 0) {
-            console.error("No Department items extracted.");
+            log("ERROR: No Department items extracted.");
+            // Log raw response if possible? 
             return;
         }
 
-        console.log(`Identified ${deptItems.length} Departments.`);
+        log(`Identified ${deptItems.length} Departments.`);
 
         const vectors = [];
 
         for (const item of deptItems) {
-            console.log(`Processing: ${item.departmentName}...`);
-            // Create a rich context string for embedding
+            log(`Processing: ${item.departmentName}...`);
             const textToEmbed = `${item.departmentName} handles: ${item.handledIssues.join(', ')}. ${item.summary}. Common phrases: ${item.examplePhrases?.join(', ') || ''}`;
             const embedding = await embedText(textToEmbed);
 
@@ -44,25 +62,27 @@ const seedDepartmentCharter = async () => {
                     values: embedding,
                     metadata: {
                         departmentName: item.departmentName,
-                        handledIssues: item.handledIssues, // Pinecone supports string arrays
+                        handledIssues: item.handledIssues,
                         summary: item.summary,
-                        textVal: textToEmbed // For context reference
+                        textVal: textToEmbed
                     }
                 });
             }
         }
 
         if (vectors.length > 0) {
-            console.log(`Upserting ${vectors.length} vectors to namespace 'department-charter'...`);
+            log(`Upserting ${vectors.length} vectors to namespace 'department-charter'...`);
             await upsertDepartmentVectors(vectors);
-            console.log("Department Charter Seeding Complete!");
+            log("Department Charter Seeding Complete!");
         } else {
-            console.warn("No vectors generated.");
+            log("WARN: No vectors generated.");
         }
 
     } catch (error) {
-        console.error("Department Seeding Error:", error);
+        log("ERROR in seedDepartmentCharter: " + error.message);
+        log(error.stack);
     }
 };
 
 seedDepartmentCharter();
+

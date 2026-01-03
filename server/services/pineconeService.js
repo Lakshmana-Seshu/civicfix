@@ -116,10 +116,20 @@ const upsertDepartmentVectors = async (vectors) => {
 
     if (pineconeIndex) {
         try {
+            console.log("Upserting vectors to Pinecone namespace 'department-charter'...");
             await pineconeIndex.namespace('department-charter').upsert(vectors);
             console.log(`Upserted ${vectors.length} vectors to Pinecone (Namespace: department-charter).`);
         } catch (error) {
             console.error("Pinecone Department Upsert Error:", error);
+            if (error.cause) console.error("Cause:", error.cause);
+            if (error.stack) console.error(error.stack);
+
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                fs.appendFileSync(path.join(__dirname, '../seed_debug_out.txt'),
+                    `ERROR in Pinecone upsert: ${error.message}\nStack: ${error.stack}\n`);
+            } catch (e) { }
         }
     }
 };

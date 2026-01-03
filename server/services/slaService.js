@@ -1,4 +1,4 @@
-const { embedText, genAI } = require('./geminiService'); // Adjust import if needed
+const { embedText, estimateSLA } = require('./geminiService'); // Adjust import if needed
 const { querySLA } = require('./pineconeService');
 
 // Helper to calculate target date skipping weekends if needed (simplified for now)
@@ -15,13 +15,35 @@ const getSLAForTicket = async (ticket) => {
         console.log(`Searching SLA for: ${queryText}`);
 
         // 2. Embed and Query Vector Store
-        const embedding = await embedText(queryText);
-        const matches = await querySLA(embedding);
+        let matches = [];
+        try {
+            const embedding = await embedText(queryText);
+            matches = await querySLA(embedding);
+        } catch (e) {
+            console.error("Vector Store Query Failed:", e);
+        }
 
-        if (!matches || matches.length === 0) {
+        if (!matches || matches.length === 0 || matches[0].score < 0.75) {
+            console.warn(`RAG Match Weak/None (Score: ${matches[0]?.score}). Falling back to Gemini estimation.`);
+
+            // FALLBACK: Pure LLM Estimation
+            const category = ticket.aiAnalysis?.category || ticket.department?.name || "General";
+            const issueType = ticket.aiAnalysis?.issueType || "Issue";
+
+            const estimated = await estimateSLA(category, issueType);
+
+            const resolutionDate = calculateTargetDate(new Date(ticket.createdAt || Date.now()), estimated.duration);
+
             return {
-                found: false,
-                reason: "No matching SLA policy found."
+                found: true,
+                slaReferenced: {
+                    section: "AI Estimated Policy (Fallback)",
+                    policyText: estimated.reasoning,
+                    duration: estimated.duration,
+                    unit: 'hours'
+                },
+                expectedResolutionDate: resolutionDate,
+                explanation: `(Estimated) ${estimated.reasoning}`
             };
         }
 
@@ -30,21 +52,10 @@ const getSLAForTicket = async (ticket) => {
         const slaData = bestMatch.metadata;
         console.log("Best SLA Match:", slaData.sectionReference);
 
-        // 4. Generate Explanation via LLM
-        // We instantiate the model locally here or import a shared instance. 
-        // Assuming geminiService allows us to get a model instance or provides a generate function.
-        // For simplicity, reusing the pattern from geminiService if possible, or new instance.
-        // Let's assume we can get a standard model here.
-
-        // Check if we need to require GoogleGenerativeAI again or export the model/genAI from service
-        // For now, I'll assume I can just use the genAI instance exported or text generation helper.
-        // I'll add a generateText helper to geminiService in a moment if needed, 
-        // but for now let's just do a direct call if we have the key, or mock it.
-
         let explanation = `Based on the Citizen Charter ${slaData.sectionReference}, ${slaData.issueType} issues must be resolved within ${slaData.slaDuration} ${slaData.slaUnit}.`;
 
         // 5. Calculate Date
-        const creationDate = new Date(ticket.createdAt);
+        const creationDate = new Date(ticket.createdAt || Date.now());
         const resolutionDate = calculateTargetDate(creationDate, slaData.slaDuration);
 
         return {
@@ -64,5 +75,7 @@ const getSLAForTicket = async (ticket) => {
         return { found: false, error: error.message };
     }
 };
+
+
 
 module.exports = { getSLAForTicket };

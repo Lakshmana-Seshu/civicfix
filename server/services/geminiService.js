@@ -246,7 +246,8 @@ const embedText = async (text) => {
             model: 'gemini-embedding-001',
             contents: [
                 { parts: [{ text: text }] }
-            ]
+            ],
+            config: { outputDimensionality: 768 }
         });
 
         const embeddings = result.embeddings || result.data?.embeddings;
@@ -354,4 +355,74 @@ const extractDepartmentDataFromText = async (rawText) => {
     }
 };
 
-module.exports = { analyzeIssue, analyzeComplaintText, checkDuplicateIssue, embedText, extractSLAFromText, extractDepartmentDataFromText };
+// Parse PDF using Gemini Vision/File API
+const parsePDFWithGemini = async (pdfBuffer) => {
+    if (!API_KEY || API_KEY.startsWith('YOUR_')) {
+        return "";
+    }
+
+    try {
+        const prompt = "Extract all text from this PDF document verbatim. Return ONLY the text.";
+
+        const pdfPart = {
+            inlineData: {
+                data: pdfBuffer.toString("base64"),
+                mimeType: "application/pdf",
+            },
+        };
+
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash', // Switched to 2.5-flash
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: prompt },
+                        pdfPart
+                    ]
+                }
+            ]
+        });
+
+        return extractTextFromResponse(result);
+    } catch (error) {
+        console.error("Gemini PDF Parsing Error:", error.message);
+        return "ERROR: " + error.message;
+    }
+};
+
+// Fallback: Estimate SLA using LLM knowledge
+const estimateSLA = async (category, issueType) => {
+    if (!API_KEY || API_KEY.startsWith('YOUR_')) {
+        return { duration: 72, reasoning: "Default Mock SLA" };
+    }
+
+    try {
+        const prompt = `
+        As a City Services Manager, provide a reasonable SLA (Service Level Agreement) resolution time for the following issue.
+        Department: ${category}
+        Issue: ${issueType}
+
+        Return ONLY a JSON object:
+        {
+            "duration": Number (in hours),
+            "reasoning": "Brief explanation citing standard city norms"
+        }
+        `;
+
+        const result = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [{ parts: [{ text: prompt }] }],
+            config: { responseMimeType: "application/json" }
+        });
+
+        const text = extractTextFromResponse(result);
+        return JSON.parse(text);
+
+    } catch (error) {
+        console.error("SLA Estimation Error:", error);
+        return { duration: 72, reasoning: "Standard Default SLA (3 days)" };
+    }
+};
+
+module.exports = { analyzeIssue, analyzeComplaintText, checkDuplicateIssue, embedText, extractSLAFromText, extractDepartmentDataFromText, parsePDFWithGemini, estimateSLA };
