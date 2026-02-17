@@ -13,7 +13,7 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         if (uiMode !== 'admin') {
-            navigate('/');
+            navigate('/admin/login');
             return;
         }
 

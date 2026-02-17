@@ -42,6 +42,10 @@ const TicketSchema = new mongoose.Schema({
         lng: Number,
         address: String
     },
+    municipalOffice: {
+        type: String,
+        default: 'General'
+    },
     department: {
         name: String,
         assignedAt: Date,

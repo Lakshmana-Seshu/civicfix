@@ -9,14 +9,18 @@ import SmartReportIssue from './pages/SmartReportIssue';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminReportDetails from './pages/AdminReportDetails';
 import CitizenReportDetails from './pages/CitizenReportDetails';
+import AdminLogin from './pages/AdminLogin';
+import UserDashboard from './pages/UserDashboard';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="report" element={<ReportIssue />} />
+          <Route path="dashboard" element={<UserDashboard />} />
 
 
           <Route path="admin" element={<AdminDashboard />} />

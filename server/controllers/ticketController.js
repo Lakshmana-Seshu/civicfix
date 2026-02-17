@@ -12,7 +12,7 @@ const reportIssue = async (req, res) => {
             // Allow no image for smart report
         }
 
-        const { userDescription, lat, lng, address, name, contact, email, routingData } = req.body;
+        const { userDescription, lat, lng, address, name, contact, email, routingData, municipalOffice } = req.body;
         const imageBuffer = req.file ? req.file.buffer : null; // Handle optional image for Smart Report
 
         // 1. AI Analysis (If image provided)
@@ -56,6 +56,7 @@ const reportIssue = async (req, res) => {
                 name: finalDepartment,
                 assignedAt: new Date()
             },
+            municipalOffice: municipalOffice || 'General',
             status: 'Open',
             // SLA logic (Stub)
             sla: {

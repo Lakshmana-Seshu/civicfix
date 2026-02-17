@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Camera, MapPin, Loader2, UploadCloud, ArrowRight, Wand2, User, Phone, Mail, Navigation, Search, FileText } from 'lucide-react';
+import { Camera, MapPin, Loader2, UploadCloud, ArrowRight, Wand2, User, Phone, Mail, Navigation, Search, FileText, Building2 } from 'lucide-react';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -90,6 +90,17 @@ const ReportIssue = () => {
     const [aiAnalysis, setAiAnalysis] = useState(null);
     const [routerData, setRouterData] = useState(null);
     const [result, setResult] = useState(null);
+    const [municipalOffice, setMunicipalOffice] = useState('');
+
+    const MUNICIPAL_OFFICES = [
+        "Greater Hyderabad Municipal Corporation (GHMC)",
+        "Bruhat Bengaluru Mahanagara Palike (BBMP)",
+        "Municipal Corporation of Delhi (MCD)",
+        "Brihanmumbai Municipal Corporation (BMC)",
+        "Chennai Corporation (GCC)",
+        "Kolkata Municipal Corporation (KMC)",
+        "Other Municipality"
+    ];
 
     const fileInputRef = useRef(null);
 
@@ -218,8 +229,8 @@ const ReportIssue = () => {
 
     const handleSubmit = async () => {
         // Validation
-        if (!image || !reporter.name || !reporter.contact) {
-            alert("Name, Contact Number, and Image are required.");
+        if (!image || !reporter.name || !reporter.contact || !municipalOffice) {
+            alert("Name, Contact Number, Municipal Office, and Image are required.");
             return;
         }
 
@@ -244,12 +255,21 @@ const ReportIssue = () => {
         if (routerData) {
             formData.append('routingData', JSON.stringify(routerData));
         }
+        formData.append('municipalOffice', municipalOffice);
 
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tickets/report`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            setResult(res.data.data);
+            const newTicket = res.data.data;
+            setResult(newTicket);
+
+            // Save to local storage for "My Reports"
+            const myTickets = JSON.parse(localStorage.getItem('civic_my_tickets') || '[]');
+            if (!myTickets.includes(newTicket._id)) {
+                myTickets.push(newTicket._id);
+                localStorage.setItem('civic_my_tickets', JSON.stringify(myTickets));
+            }
         } catch (err) {
             console.error("Submission failed:", err);
             alert("Failed to report issue. Please try again.");
@@ -301,6 +321,33 @@ const ReportIssue = () => {
             <div>
                 <h2 className="text-2xl font-bold text-slate-900">Report an Issue</h2>
                 <p className="text-slate-500">Help us fix your city by reporting issues.</p>
+            </div>
+
+            {/* Step 1: Municipal Office Selection */}
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                    <Building2 size={18} /> Municipal Office
+                </h3>
+
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Municipality <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                        <Building2 className="absolute left-3 top-3 text-slate-400" size={16} />
+                        <select
+                            value={municipalOffice}
+                            onChange={(e) => setMunicipalOffice(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-civic-500 focus:border-civic-500 transition-all appearance-none bg-white text-slate-700"
+                        >
+                            <option value="" disabled>Select your municipal office</option>
+                            {MUNICIPAL_OFFICES.map(office => (
+                                <option key={office} value={office}>{office}</option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Step 1: User Details */}
