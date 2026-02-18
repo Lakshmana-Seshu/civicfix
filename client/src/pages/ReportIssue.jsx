@@ -91,6 +91,7 @@ const ReportIssue = () => {
     const [routerData, setRouterData] = useState(null);
     const [result, setResult] = useState(null);
     const [municipalOffice, setMunicipalOffice] = useState('');
+    const [areaType, setAreaType] = useState('urban');
 
     const MUNICIPAL_OFFICES = [
         "Greater Hyderabad Municipal Corporation (GHMC)",
@@ -229,8 +230,13 @@ const ReportIssue = () => {
 
     const handleSubmit = async () => {
         // Validation
-        if (!image || !reporter.name || !reporter.contact || !municipalOffice) {
-            alert("Name, Contact Number, Municipal Office, and Image are required.");
+        if (!image || !reporter.name || !reporter.contact) {
+            alert("Name, Contact Number, and Image are required.");
+            return;
+        }
+
+        if (areaType === 'urban' && !municipalOffice) {
+            alert("Please select a Municipal Office.");
             return;
         }
 
@@ -255,7 +261,11 @@ const ReportIssue = () => {
         if (routerData) {
             formData.append('routingData', JSON.stringify(routerData));
         }
-        formData.append('municipalOffice', municipalOffice);
+
+        formData.append('areaType', areaType);
+        if (areaType === 'urban') {
+            formData.append('municipalOffice', municipalOffice);
+        }
 
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/tickets/report`, formData, {
@@ -326,28 +336,59 @@ const ReportIssue = () => {
             {/* Step 1: Municipal Office Selection */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                    <Building2 size={18} /> Municipal Office
+                    <Building2 size={18} /> Location Details
                 </h3>
 
+                {/* Area Type Selection */}
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Select Municipality <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                        <Building2 className="absolute left-3 top-3 text-slate-400" size={16} />
-                        <select
-                            value={municipalOffice}
-                            onChange={(e) => setMunicipalOffice(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-civic-500 focus:border-civic-500 transition-all appearance-none bg-white text-slate-700"
-                        >
-                            <option value="" disabled>Select your municipal office</option>
-                            {MUNICIPAL_OFFICES.map(office => (
-                                <option key={office} value={office}>{office}</option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
-                        </div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Area Type <span className="text-red-500">*</span></label>
+                    <div className="flex gap-4">
+                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${areaType === 'urban' ? 'bg-civic-50 border-civic-500 text-civic-700' : 'border-slate-200 hover:bg-slate-50'}`}>
+                            <input
+                                type="radio"
+                                name="areaType"
+                                value="urban"
+                                checked={areaType === 'urban'}
+                                onChange={() => setAreaType('urban')}
+                                className="w-4 h-4 text-civic-600 focus:ring-civic-500"
+                            />
+                            <span className="font-medium">Urban Area</span>
+                        </label>
+                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${areaType === 'rural' ? 'bg-civic-50 border-civic-500 text-civic-700' : 'border-slate-200 hover:bg-slate-50'}`}>
+                            <input
+                                type="radio"
+                                name="areaType"
+                                value="rural"
+                                checked={areaType === 'rural'}
+                                onChange={() => setAreaType('rural')}
+                                className="w-4 h-4 text-civic-600 focus:ring-civic-500"
+                            />
+                            <span className="font-medium">Rural Area</span>
+                        </label>
                     </div>
                 </div>
+
+                {areaType === 'urban' && (
+                    <div className="animate-in fade-in slide-in-from-top-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Select Municipality <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                            <Building2 className="absolute left-3 top-3 text-slate-400" size={16} />
+                            <select
+                                value={municipalOffice}
+                                onChange={(e) => setMunicipalOffice(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-civic-500 focus:border-civic-500 transition-all appearance-none bg-white text-slate-700"
+                            >
+                                <option value="" disabled>Select your municipal office</option>
+                                {MUNICIPAL_OFFICES.map(office => (
+                                    <option key={office} value={office}>{office}</option>
+                                ))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Step 1: User Details */}

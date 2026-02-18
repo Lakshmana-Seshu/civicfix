@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { MapPin, PlusCircle, LayoutDashboard, User, ShieldCheck } from 'lucide-react';
+import { MapPin, PlusCircle, LayoutDashboard, User, ShieldCheck, MessageSquare } from 'lucide-react';
 import { useUiMode } from '../context/UiModeContext';
 
 const Layout = () => {
@@ -33,6 +33,7 @@ const Layout = () => {
                     <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
                         <Link to="/" className="hover:text-civic-600 transition-colors">Home</Link>
                         <Link to="/report" className="hover:text-civic-600 transition-colors">Report Issue</Link>
+                        <Link to="/feedback" className="hover:text-civic-600 transition-colors">Feedback</Link>
                         {uiMode === 'admin' ? (
                             <Link to="/admin" className="hover:text-civic-600 transition-colors">Dashboard</Link>
                         ) : (
@@ -73,6 +74,10 @@ const Layout = () => {
                 <Link to="/report" className="flex flex-col items-center gap-1 text-xs text-civic-600 font-medium">
                     <PlusCircle size={24} />
                     Report
+                </Link>
+                <Link to="/feedback" className="flex flex-col items-center gap-1 text-xs text-slate-500 hover:text-civic-600">
+                    <MessageSquare size={20} />
+                    Feedback
                 </Link>
                 {uiMode === 'admin' ? (
                     <Link to="/admin" className="flex flex-col items-center gap-1 text-xs text-slate-500 hover:text-civic-600">

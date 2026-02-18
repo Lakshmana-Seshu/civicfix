@@ -11,6 +11,7 @@ import AdminReportDetails from './pages/AdminReportDetails';
 import CitizenReportDetails from './pages/CitizenReportDetails';
 import AdminLogin from './pages/AdminLogin';
 import UserDashboard from './pages/UserDashboard';
+import Feedback from './pages/Feedback';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="report" element={<ReportIssue />} />
+          <Route path="feedback" element={<Feedback />} />
           <Route path="dashboard" element={<UserDashboard />} />
 
 
